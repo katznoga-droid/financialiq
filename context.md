@@ -1,6 +1,6 @@
 # FinancialIQ: Product Context
 
-_Last updated: 2026-10-24. Status: first working version runs locally and is on GitHub; Vercel hosting is in progress (waiting on Noga's approval click in Vercel). Keep this file current: every decision and status change goes here._
+_Last updated: 2026-10-24. Status: first working version runs locally and is on GitHub; live on Vercel at https://financialiq-khaki.vercel.app behind a password. Keep this file current: every decision and status change goes here._
 
 ## 1. Goal
 
@@ -26,7 +26,7 @@ The point is to go from "here's an idea" to "here's what the numbers look like, 
 |---|---|
 | Users | Single user (Noga) for now. Keep it easy to make shareable later: keys stay on the server, and saved scenarios go through one storage module (`lib/storage.ts`) that can be swapped for a database. |
 | Platform and stack | Web app: Next.js 16 + TypeScript + React 19, zod for validation. No other UI libraries; charts are hand-drawn SVG. |
-| Where it runs | Locally on Noga's Windows PC (see section 8), and on Vercel behind a password (see section 9, in progress). |
+| Where it runs | Locally on Noga's Windows PC (see section 8), and on Vercel at https://financialiq-khaki.vercel.app behind a password (see section 9). |
 | Hosting password | App-level password gate (`proxy.ts`, Next.js 16's renamed middleware) using HTTP Basic auth, turned on only when the `SITE_PASSWORD` environment variable is set. Chosen over Vercel's own Password Protection, which needs a paid plan. Any username works; only the password is checked. Locally there is no password. |
 | Time horizon | Monthly P&L, 1 to 12 months (user picks; default 12). The earlier mockup's yearly view was replaced. |
 | Providers | OpenAI, Anthropic and OpenRouter. Grok is reached through OpenRouter (no separate xAI provider). |
@@ -73,7 +73,8 @@ Prices are approximate US$ per 1M input / output tokens.
 - GitHub: Noga ran the first push herself on 2026-10-24 (`git remote add origin …` then `git push -u origin main` from a command window in the folder), because Claude's permission settings blocked pushing at the time. Since then Claude has been able to push from this folder directly. `main` tracks `origin/main`.
 - Password gate added and tested locally on 2026-10-24: no password or a wrong one gets a 401, the right one gets in, and the API routes are covered too.
 - The generate API's `maxDuration` was lowered from 600 to 300 seconds, the most Vercel's Hobby plan allows.
-- Not yet: finishing the Vercel deployment, scenario comparison side by side, best/base/worst cases.
+- Deployed to Vercel on 2026-10-24 and tested live: password gate works, a real Claude Haiku 5.5 generation succeeded in 16 s.
+- Not yet: scenario comparison side by side, best/base/worst cases.
 
 ## 8. Running it locally
 
@@ -88,12 +89,15 @@ Prices are approximate US$ per 1M input / output tokens.
 - **OpenRouter:** balance is low; top it up before heavy use. Requests are capped at 12,000 output tokens for this reason.
 - **Anthropic:** working.
 
-## 9. Hosting on Vercel (in progress)
+## 9. Hosting on Vercel (live)
 
-- **Account:** Noga's Vercel account (katz.noga@gmail.com, Hobby/free plan, scope `noga12`).
-- **Plan:** create a Vercel project linked to the GitHub repo `katznoga-droid/financialiq` so every push to `main` redeploys automatically; add `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY` (copied from `.env.local`, never printed or committed) and `SITE_PASSWORD` as encrypted environment variables; deploy to production; check the live URL asks for the password.
-- **Status (2026-10-24):** code is ready and pushed (password gate, 300 s timeout). Claude's Vercel connection needed Noga to approve access to her Vercel scope via a one-time consent link before it could create the project; waiting on that click.
-- **Live URL and password:** to be added here once deployed (the password itself is not stored in this file).
+- **Live URL:** https://financialiq-khaki.vercel.app. The browser shows a sign-in box: type anything as the username, and the site password as the password. The password is stored only in Vercel's `SITE_PASSWORD` setting (Noga has it); it is deliberately not written in this file.
+- **Account:** Noga's Vercel account (katz.noga@gmail.com, username `katznoga-6555`, team `noga12`, Hobby/free plan). Project `financialiq`.
+- **Auto-deploy:** the project is linked to GitHub `katznoga-droid/financialiq`; every push to `main` redeploys production automatically.
+- **Environment variables (Production and Preview, encrypted):** `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY` (copied from `.env.local` by the Vercel CLI, never shown), and `SITE_PASSWORD`. To change a key or the password: Vercel dashboard → financialiq → Settings → Environment Variables → edit → then Deployments → latest → Redeploy.
+- **Other addresses:** `financialiq-noga12.vercel.app` and `financialiq-git-main-noga12.vercel.app` also exist but sit behind Vercel's own login (default Deployment Protection), so they only open for Noga's Vercel account. Use the khaki URL.
+- **Limits:** Hobby plan caps each request at 300 s, so the generate API's `maxDuration` is 300.
+- **Tested 2026-10-24:** no password or a wrong one returns 401; the right one loads the app; the live model list and a real generation (Claude Haiku 5.5, 16 s) work.
 
 ## 10. Sample test prompt
 
