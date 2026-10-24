@@ -3,7 +3,7 @@ import { providerInfo } from "@/lib/catalog";
 import { generateModel } from "@/lib/ai/generate";
 import { ProviderError } from "@/lib/ai/providers";
 
-export const maxDuration = 600;
+export const maxDuration = 300;
 
 export async function POST(req: Request) {
   let body: { provider?: string; model?: string; scenario?: string };
