@@ -1,0 +1,14 @@
+# Secrets
+.env
+.env.local
+.env.*.local
+
+# Dependencies and builds
+node_modules/
+dist/
+.next/
+
+# Local tooling
+*.tsbuildinfo
+next-env.d.ts
+.claude/
