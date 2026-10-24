@@ -199,8 +199,15 @@ export default function Workspace({ configured }: { configured: Record<ProviderI
               </select>
             </label>
             <button type="button" className="btn" onClick={save}>Save scenario</button>
-            <button type="button" className="btn" onClick={() => download(`${model.title.replace(/[^\w-]+/g, "_")}.csv`, toCsv(model, result, values))}>
-              Export to Excel (CSV)
+            <button type="button" className="btn btn-primary" title="Excel workbook with live formulas: edit a driver and the P&L recalculates"
+              onClick={async () => {
+                const { downloadXlsx } = await import("@/lib/xlsx");
+                await downloadXlsx(`${model.title.replace(/[^\w-]+/g, "_")}.xlsx`, model, result, values);
+              }}>
+              Export
+            </button>
+            <button type="button" className="btn" title="Plain CSV of the numbers" onClick={() => download(`${model.title.replace(/[^\w-]+/g, "_")}.csv`, toCsv(model, result, values))}>
+              CSV
             </button>
           </div>
         </div>

@@ -25,7 +25,7 @@ The point is to go from "here's an idea" to "here's what the numbers look like, 
 | Topic | Decision |
 |---|---|
 | Users | Single user (Noga) for now. Keep it easy to make shareable later: keys stay on the server, and saved scenarios go through one storage module (`lib/storage.ts`) that can be swapped for a database. |
-| Platform and stack | Web app: Next.js 16 + TypeScript + React 19, zod for validation. No other UI libraries; charts are hand-drawn SVG. |
+| Platform and stack | Web app: Next.js 16 + TypeScript + React 19, zod for validation, ExcelJS for the .xlsx export (loaded only when Export is clicked). No other UI libraries; charts are hand-drawn SVG. HyperFormula is a dev-only dependency the tests use to recalculate exported workbooks. |
 | Where it runs | Locally on Noga's Windows PC (see section 8), and on Vercel at https://financialiq-khaki.vercel.app behind a password (see section 9). |
 | Hosting password | App-level password gate (`proxy.ts`, Next.js 16's renamed middleware) using HTTP Basic auth, turned on only when the `SITE_PASSWORD` environment variable is set. Chosen over Vercel's own Password Protection, which needs a paid plan. Any username works; only the password is checked. Locally there is no password. |
 | Time horizon | Monthly P&L, 1 to 12 months (user picks; default 12). The earlier mockup's yearly view was replaced. |
@@ -37,7 +37,7 @@ The point is to go from "here's an idea" to "here's what the numbers look like, 
 | P&L lines | Revenue, COGS, gross profit, operating expenses by category, EBITDA, then optional depreciation / interest / tax lines, and net income. |
 | Picture of the P&L | Both: a formatted monthly table and charts (waterfall from revenue to net income, monthly trend, and a gauge for LTV:CAC). |
 | Saved scenarios | Saved in the browser (localStorage) for now. |
-| Export | CSV that opens in Excel. |
+| Export | **Export** button downloads a real .xlsx built in the browser (`lib/xlsx.ts`): a Drivers sheet of input cells (pink fill, blue text; percent drivers stored as real percentages, e.g. 5%), a Monthly P&L sheet and a Unit Economics sheet whose cells are live Excel formulas translated from the model's formula language, so editing a driver in Excel recalculates. Branded purple/pink header, frozen panes, number formats, and a "How it's calculated" column showing the app formula. Costs are positive numbers in Excel (the app shows them negative), and every section total gets its own row because formulas refer to it. Translation: `/` becomes `IFERROR(a/b,0)` (the app reads divide-by-zero as 0), `floor`/`ceil` become `FLOOR(x,1)`/`CEILING(x,1)`, comparisons and `&&`/`||` become `IF`/`AND`/`OR`. A small **CSV** button keeps the old plain export. |
 | Sample scenarios for demos | A "✨ Sample scenario" button above the prompt box asks the currently selected provider and model to write a random, realistic made-up business in the SkyShield style (section 10) and fills it into the box. The server picks the industry and stage at random from a list of 30 industries and 5 stages in `lib/ai/sample.ts` (models asked for "a random business" repeat themselves). Plain-text call, no JSON mode, capped at 4,000 output tokens; route `/api/sample`. |
 | Source control | GitHub repo `katznoga-droid/financialiq` (private, `main` branch). |
 
@@ -69,13 +69,14 @@ Prices are approximate US$ per 1M input / output tokens.
 
 ## 7. Build status
 
-- Done: formula engine with tests, provider adapters (OpenAI, Anthropic, OpenRouter) with JSON mode and retry, generate and model-list APIs, full workspace UI (scenario, provider and model pickers, drivers with sliders, unit economics with gauge and live summary, waterfall and trend charts, monthly P&L table with formulas shown on request), saved scenarios, CSV export, Windows start script, purple glass styling.
+- Done: formula engine with tests, provider adapters (OpenAI, Anthropic, OpenRouter) with JSON mode and retry, generate and model-list APIs, full workspace UI (scenario, provider and model pickers, drivers with sliders, unit economics with gauge and live summary, waterfall and trend charts, monthly P&L table with formulas shown on request), saved scenarios, Excel (.xlsx with live formulas) and CSV export, Windows start script, purple glass styling.
 - Tested: real generations succeed with Anthropic and OpenRouter models. The OpenAI key is valid, but the OpenAI account had no credits on 2026-10-24, so direct OpenAI calls fail until billing is topped up (OpenAI models still work through OpenRouter). The OpenRouter balance was low, which is why its requests are capped at 12,000 output tokens.
 - GitHub: Noga ran the first push herself on 2026-10-24 (`git remote add origin …` then `git push -u origin main` from a command window in the folder), because Claude's permission settings blocked pushing at the time. Since then Claude has been able to push from this folder directly. `main` tracks `origin/main`.
 - Password gate added and tested locally on 2026-10-24: no password or a wrong one gets a 401, the right one gets in, and the API routes are covered too.
 - The generate API's `maxDuration` was lowered from 600 to 300 seconds, the most Vercel's Hobby plan allows.
 - Deployed to Vercel on 2026-10-24 and tested live: password gate works, a real Claude Haiku 5.5 generation succeeded in 16 s.
 - Sample scenario button added on 2026-10-24 and tested locally: Claude Haiku 5.5 and DeepSeek V4 Flash each return a varied, detailed scenario in about 8 to 11 seconds.
+- Excel export verified 2026-10-24 by `tests/xlsx.test.ts`: it writes the workbook, reads it back, recalculates every formula with HyperFormula and checks every P&L cell and unit-economics value against the app's engine (example model with default and changed drivers, plus an edge-case model using every function and operator), and checks that editing a driver cell recalculates the P&L. The button was also checked in the browser to download a valid .xlsx.
 - Not yet: scenario comparison side by side, best/base/worst cases.
 
 ## 8. Running it locally
@@ -130,5 +131,5 @@ Build a 12-month monthly P&L, show the key drivers I can tune, and summarise uni
 1. Should the AI ask clarifying questions before generating when the scenario is vague?
 2. Side-by-side comparison of two models on the same scenario, and base / best / worst cases?
 3. Should drivers be able to vary over time (for example, a price rise in month 7) as a first-class feature?
-4. Export beyond CSV: real .xlsx with formulas, PDF, Google Sheets?
+4. Export beyond .xlsx and CSV: PDF, Google Sheets? (.xlsx with live formulas was added 2026-10-24.)
 5. A benchmark set of scenarios to test each provider against?
