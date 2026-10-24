@@ -7,6 +7,9 @@ import { PROVIDERS, providerInfo, type ModelOption, type ProviderId } from "../c
 
 export type ChatMessage = { role: "user" | "assistant"; content: string };
 
+/** Per-call settings. Defaults suit a full model build: JSON mode and a large output budget. */
+export type ChatOptions = { json?: boolean; maxTokens?: number };
+
 export class ProviderError extends Error {
   constructor(message: string, public status = 502) {
     super(message);
@@ -48,11 +51,11 @@ async function postJson(url: string, headers: Record<string, string>, body: unkn
   return json;
 }
 
-async function callAnthropic(model: string, system: string, messages: ChatMessage[], key: string): Promise<string> {
+async function callAnthropic(model: string, system: string, messages: ChatMessage[], key: string, opts: ChatOptions): Promise<string> {
   const json = await postJson(
     "https://api.anthropic.com/v1/messages",
     { "x-api-key": key, "anthropic-version": "2023-06-01" },
-    { model, max_tokens: 16000, system, messages },
+    { model, max_tokens: opts.maxTokens ?? 16000, system, messages },
   );
   const text = (json.content ?? []).filter((b: any) => b.type === "text").map((b: any) => b.text).join("");
   if (json.stop_reason === "max_tokens") throw new ProviderError("The model's answer was cut off. Try again or pick another model.");
@@ -65,15 +68,16 @@ async function callOpenAICompatible(
   model: string,
   system: string,
   messages: ChatMessage[],
+  opts: ChatOptions,
 ): Promise<string> {
   const body: Record<string, unknown> = {
     model,
     messages: [{ role: "system", content: system }, ...messages],
-    response_format: { type: "json_object" },
   };
+  if (opts.json !== false) body.response_format = { type: "json_object" };
   // OpenRouter reserves credit for the model's full output limit unless told
   // otherwise, which can fail on a small balance. A model JSON fits well within this.
-  if (url.includes("openrouter")) body.max_tokens = 12000;
+  if (url.includes("openrouter")) body.max_tokens = opts.maxTokens ?? 12000;
   let json: any;
   try {
     json = await postJson(url, headers, body);
@@ -90,14 +94,14 @@ async function callOpenAICompatible(
   return choice.message?.content ?? "";
 }
 
-export async function chat(provider: ProviderId, model: string, system: string, messages: ChatMessage[]): Promise<string> {
+export async function chat(provider: ProviderId, model: string, system: string, messages: ChatMessage[], opts: ChatOptions = {}): Promise<string> {
   const key = apiKey(provider);
   if (!key) throw new ProviderError(`No API key for ${providerInfo(provider)?.label ?? provider}. Add it to .env.local and restart the app.`, 400);
   switch (provider) {
     case "anthropic":
-      return callAnthropic(model, system, messages, key);
+      return callAnthropic(model, system, messages, key, opts);
     case "openai":
-      return callOpenAICompatible("https://api.openai.com/v1/chat/completions", { authorization: `Bearer ${key}` }, model, system, messages);
+      return callOpenAICompatible("https://api.openai.com/v1/chat/completions", { authorization: `Bearer ${key}` }, model, system, messages, opts);
     case "openrouter":
       return callOpenAICompatible(
         "https://openrouter.ai/api/v1/chat/completions",
@@ -105,6 +109,7 @@ export async function chat(provider: ProviderId, model: string, system: string, 
         model,
         system,
         messages,
+        opts,
       );
   }
 }

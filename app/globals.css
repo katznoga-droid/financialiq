@@ -95,6 +95,13 @@ select option { background: #1d0b45; color: #fff; }
   box-shadow: 0 10px 30px rgba(255, 47, 179, 0.45);
 }
 .btn-primary:hover:not(:disabled) { filter: brightness(1.1); background: var(--grad); }
+.scenario-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.btn-sample {
+  border: 1px solid transparent; font-weight: 600;
+  background: linear-gradient(var(--glass), var(--glass)) padding-box, var(--grad) border-box;
+  box-shadow: 0 4px 16px rgba(255, 47, 179, 0.3);
+}
+.btn-sample:hover:not(:disabled) { background: var(--grad) border-box; border-color: transparent; }
 
 .header-inner {
   max-width: 1600px; margin: 0 auto; padding: 22px 28px 6px;

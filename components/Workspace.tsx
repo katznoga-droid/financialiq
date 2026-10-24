@@ -40,6 +40,7 @@ export default function Workspace({ configured }: { configured: Record<ProviderI
   const [months, setMonths] = useState(12);
 
   const [busy, setBusy] = useState(false);
+  const [sampling, setSampling] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState("This is a worked example. Describe your own business and generate a model.");
   const [saved, setSaved] = useState<SavedScenario[]>([]);
@@ -94,6 +95,28 @@ export default function Workspace({ configured }: { configured: Record<ProviderI
       setStatus("");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function surprise() {
+    setSampling(true);
+    setError(null);
+    setStatus(`Asking ${modelLabel} for a sample business…`);
+    try {
+      const res = await fetch("/api/sample", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ provider, model: modelId }),
+      });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error ?? `Request failed (${res.status})`);
+      setScenario(j.scenario);
+      setStatus(`Sample scenario (${j.industry}) written by ${modelLabel}. Edit it if you like, then generate.`);
+    } catch (e) {
+      setError((e as Error).message);
+      setStatus("");
+    } finally {
+      setSampling(false);
     }
   }
 
@@ -188,8 +211,15 @@ export default function Workspace({ configured }: { configured: Record<ProviderI
           <section className="card" id="build">
             <h2><span className="step">1</span>Describe the business</h2>
             <div className="field">
-              <label htmlFor="scenario">The business and its variables, in plain language</label>
-              <textarea id="scenario" className="textarea" rows={7} value={scenario} onChange={(e) => setScenario(e.target.value)} />
+              <div className="scenario-head">
+                <label htmlFor="scenario">The business and its variables, in plain language</label>
+                <button type="button" className="btn btn-sm btn-sample" onClick={surprise}
+                  disabled={sampling || busy || !configured[provider]}
+                  title="Uses the provider and model chosen below to write a random, realistic sample business">
+                  {sampling ? <><span className="spinner" aria-hidden="true" />Writing…</> : "✨ Sample scenario"}
+                </button>
+              </div>
+              <textarea id="scenario" className="textarea" rows={7} value={scenario} onChange={(e) => setScenario(e.target.value)} disabled={sampling} />
             </div>
 
             <h2><span className="step">2</span>Choose the AI model</h2>
@@ -216,7 +246,7 @@ export default function Workspace({ configured }: { configured: Record<ProviderI
             {!configured[provider] && (
               <div className="alert alert-warn">There is no API key for {info.label}. Add {info.envKey} to .env.local and restart the app.</div>
             )}
-            <button type="button" className="btn btn-primary" onClick={generate} disabled={busy || noKeys || !configured[provider] || scenario.trim().length < 20}>
+            <button type="button" className="btn btn-primary" onClick={generate} disabled={busy || sampling || noKeys || !configured[provider] || scenario.trim().length < 20}>
               {busy ? <><span className="spinner" aria-hidden="true" />Generating model…</> : "Generate financial model"}
             </button>
             {error && <div className="alert alert-error" role="alert">{error}</div>}

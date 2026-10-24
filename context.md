@@ -38,6 +38,7 @@ The point is to go from "here's an idea" to "here's what the numbers look like, 
 | Picture of the P&L | Both: a formatted monthly table and charts (waterfall from revenue to net income, monthly trend, and a gauge for LTV:CAC). |
 | Saved scenarios | Saved in the browser (localStorage) for now. |
 | Export | CSV that opens in Excel. |
+| Sample scenarios for demos | A "✨ Sample scenario" button above the prompt box asks the currently selected provider and model to write a random, realistic made-up business in the SkyShield style (section 10) and fills it into the box. The server picks the industry and stage at random from a list of 30 industries and 5 stages in `lib/ai/sample.ts` (models asked for "a random business" repeat themselves). Plain-text call, no JSON mode, capped at 4,000 output tokens; route `/api/sample`. |
 | Source control | GitHub repo `katznoga-droid/financialiq` (private, `main` branch). |
 
 ## 4. Drivers-to-P&L relationship (the key design idea)
@@ -74,6 +75,7 @@ Prices are approximate US$ per 1M input / output tokens.
 - Password gate added and tested locally on 2026-10-24: no password or a wrong one gets a 401, the right one gets in, and the API routes are covered too.
 - The generate API's `maxDuration` was lowered from 600 to 300 seconds, the most Vercel's Hobby plan allows.
 - Deployed to Vercel on 2026-10-24 and tested live: password gate works, a real Claude Haiku 5.5 generation succeeded in 16 s.
+- Sample scenario button added on 2026-10-24 and tested locally: Claude Haiku 5.5 and DeepSeek V4 Flash each return a varied, detailed scenario in about 8 to 11 seconds.
 - Not yet: scenario comparison side by side, best/base/worst cases.
 
 ## 8. Running it locally
