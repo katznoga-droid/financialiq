@@ -1,6 +1,6 @@
 # FinancialIQ: Product Context
 
-_Last updated: 2026-10-24. Status: first working version built and running locally. Keep this file current: every decision and status change goes here._
+_Last updated: 2026-10-24. Status: first working version runs locally and is on GitHub; Vercel hosting is in progress (waiting on Noga's approval click in Vercel). Keep this file current: every decision and status change goes here._
 
 ## 1. Goal
 
@@ -26,7 +26,8 @@ The point is to go from "here's an idea" to "here's what the numbers look like, 
 |---|---|
 | Users | Single user (Noga) for now. Keep it easy to make shareable later: keys stay on the server, and saved scenarios go through one storage module (`lib/storage.ts`) that can be swapped for a database. |
 | Platform and stack | Web app: Next.js 16 + TypeScript + React 19, zod for validation. No other UI libraries; charts are hand-drawn SVG. |
-| Where it runs | Locally on Noga's Windows PC first (`Start FinancialIQ.bat` or `npm run dev`, at http://localhost:3000). Hosting on Vercel is an option later, with a password in front and the API keys in Vercel's environment settings. |
+| Where it runs | Locally on Noga's Windows PC (see section 8), and on Vercel behind a password (see section 9, in progress). |
+| Hosting password | App-level password gate (`proxy.ts`, Next.js 16's renamed middleware) using HTTP Basic auth, turned on only when the `SITE_PASSWORD` environment variable is set. Chosen over Vercel's own Password Protection, which needs a paid plan. Any username works; only the password is checked. Locally there is no password. |
 | Time horizon | Monthly P&L, 1 to 12 months (user picks; default 12). The earlier mockup's yearly view was replaced. |
 | Providers | OpenAI, Anthropic and OpenRouter. Grok is reached through OpenRouter (no separate xAI provider). |
 | Models | Each provider offers a short curated list that leads with cheap, low-tier models (see section 6), plus a "Show all models" switch that fetches the provider's full live list. |
@@ -69,16 +70,56 @@ Prices are approximate US$ per 1M input / output tokens.
 
 - Done: formula engine with tests, provider adapters (OpenAI, Anthropic, OpenRouter) with JSON mode and retry, generate and model-list APIs, full workspace UI (scenario, provider and model pickers, drivers with sliders, unit economics with gauge and live summary, waterfall and trend charts, monthly P&L table with formulas shown on request), saved scenarios, CSV export, Windows start script, purple glass styling.
 - Tested: real generations succeed with Anthropic and OpenRouter models. The OpenAI key is valid, but the OpenAI account had no credits on 2026-10-24, so direct OpenAI calls fail until billing is topped up (OpenAI models still work through OpenRouter). The OpenRouter balance was low, which is why its requests are capped at 12,000 output tokens.
-- GitHub: first version pushed to `katznoga-droid/financialiq` on 2026-10-24 (`main` tracks `origin/main`). Noga pushes from the folder with `git push`; Claude's permission settings currently block it from pushing.
-- Not yet: hosting, scenario comparison side by side, best/base/worst cases.
+- GitHub: Noga ran the first push herself on 2026-10-24 (`git remote add origin …` then `git push -u origin main` from a command window in the folder), because Claude's permission settings blocked pushing at the time. Since then Claude has been able to push from this folder directly. `main` tracks `origin/main`.
+- Password gate added and tested locally on 2026-10-24: no password or a wrong one gets a 401, the right one gets in, and the API routes are covered too.
+- The generate API's `maxDuration` was lowered from 600 to 300 seconds, the most Vercel's Hobby plan allows.
+- Not yet: finishing the Vercel deployment, scenario comparison side by side, best/base/worst cases.
 
-## 8. Out of scope (for now)
+## 8. Running it locally
+
+1. API keys live in `.env.local` in the app folder (git-ignored). `.env.example` is the blank template with the three names: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY`.
+2. Double-click **`Start FinancialIQ.bat`**. The first run installs dependencies (a minute or two), then the browser opens at http://localhost:3000.
+3. Keep the black window open while using the app; closing it stops the app.
+4. Developers: `npm run dev`, `npm test`, `npm run build`.
+
+### Account balances (checked 2026-10-24)
+
+- **OpenAI:** the key is valid but the account has no credits, so direct OpenAI calls fail until billing is topped up at platform.openai.com. OpenAI models still work through OpenRouter.
+- **OpenRouter:** balance is low; top it up before heavy use. Requests are capped at 12,000 output tokens for this reason.
+- **Anthropic:** working.
+
+## 9. Hosting on Vercel (in progress)
+
+- **Account:** Noga's Vercel account (katz.noga@gmail.com, Hobby/free plan, scope `noga12`).
+- **Plan:** create a Vercel project linked to the GitHub repo `katznoga-droid/financialiq` so every push to `main` redeploys automatically; add `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY` (copied from `.env.local`, never printed or committed) and `SITE_PASSWORD` as encrypted environment variables; deploy to production; check the live URL asks for the password.
+- **Status (2026-10-24):** code is ready and pushed (password gate, 300 s timeout). Claude's Vercel connection needed Noga to approve access to her Vercel scope via a one-time consent link before it could create the project; waiting on that click.
+- **Live URL and password:** to be added here once deployed (the password itself is not stored in this file).
+
+## 10. Sample test prompt
+
+Made-up cloud security SaaS scenario used to test the app (2026-10-24):
+
+```
+SkyShield is a B2B SaaS company selling cloud security posture management (CSPM) to mid-market companies running on AWS, Azure and GCP. It scans cloud accounts for misconfigurations, compliance gaps (SOC 2, ISO 27001, HIPAA) and exposed secrets.
+
+Pricing: three tiers billed annually — Starter $1,200/month (up to 50 cloud assets), Growth $4,500/month (up to 500 assets), Enterprise ~$15,000/month (unlimited, custom). Mix of new customers: 50% Starter, 35% Growth, 15% Enterprise.
+
+Today: 120 paying customers, $600k MRR. Adding ~12 new customers per month, growing 5% month over month. Monthly logo churn 1.2%; net revenue retention 115% from tier upgrades.
+
+Go-to-market: inbound + sales-led. Blended CAC $18,000 per customer. Sales cycle 60 days. 8 account executives at $180k fully loaded, each closing ~2 deals/month.
+
+Costs: cloud hosting and scanning infrastructure ~12% of revenue; customer success 6% of revenue; payment and third-party data fees 2%. R&D team of 25 engineers at $200k fully loaded; G&A $120k/month; office and tools $40k/month.
+
+Build a 12-month monthly P&L, show the key drivers I can tune, and summarise unit economics (CAC payback, LTV:CAC, gross margin, contribution margin, and when we reach EBITDA break-even).
+```
+
+## 11. Out of scope (for now)
 
 - Balance sheet and cash flow statement.
 - Pulling real market data or benchmarks from the web.
 - Multi-user collaboration and accounts.
 
-## 9. Open questions
+## 12. Open questions
 
 1. Should the AI ask clarifying questions before generating when the scenario is vague?
 2. Side-by-side comparison of two models on the same scenario, and base / best / worst cases?
