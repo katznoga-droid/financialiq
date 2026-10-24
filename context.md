@@ -69,7 +69,8 @@ Prices are approximate US$ per 1M input / output tokens.
 
 - Done: formula engine with tests, provider adapters (OpenAI, Anthropic, OpenRouter) with JSON mode and retry, generate and model-list APIs, full workspace UI (scenario, provider and model pickers, drivers with sliders, unit economics with gauge and live summary, waterfall and trend charts, monthly P&L table with formulas shown on request), saved scenarios, CSV export, Windows start script, purple glass styling.
 - Tested: real generations succeed with Anthropic and OpenRouter models. The OpenAI key is valid, but the OpenAI account had no credits on 2026-10-24, so direct OpenAI calls fail until billing is topped up (OpenAI models still work through OpenRouter). The OpenRouter balance was low, which is why its requests are capped at 12,000 output tokens.
-- Not yet: pushing to GitHub (waiting on Noga's go-ahead), hosting, scenario comparison side by side, best/base/worst cases.
+- GitHub: first version pushed to `katznoga-droid/financialiq` on 2026-10-24 (`main` tracks `origin/main`). Noga pushes from the folder with `git push`; Claude's permission settings currently block it from pushing.
+- Not yet: hosting, scenario comparison side by side, best/base/worst cases.
 
 ## 8. Out of scope (for now)
 
